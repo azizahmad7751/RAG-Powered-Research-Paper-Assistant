@@ -36,11 +36,11 @@ def process_text_and_store(all_text):
     )
     chunks = text_splitter.split_text(all_text)
 
-    # Embed documents using HuggingFace Inference API
-    embeddings = embedding_model.embed_documents(chunks)
-
-    # Create FAISS index
-    faiss_db = FAISS.from_embeddings(embeddings=embeddings, texts=chunks)
+    # Create FAISS index with embeddings
+    faiss_db = FAISS.from_texts(
+        texts=chunks,
+        embedding=lambda x: embedding_model.embed_documents(x)
+    )
     return faiss_db
 
 
