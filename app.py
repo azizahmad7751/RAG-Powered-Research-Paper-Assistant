@@ -2,24 +2,25 @@ import os
 import PyPDF2
 import streamlit as st
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
-import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-from litellm import completion
 from huggingface_hub import login
+from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.tools import ArxivQueryRun
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+from litellm import completion
 
 # Load environment variables
 load_dotenv()
-gemini_api_key = os.getenv("AIzaSyBy3C54XZ7sczq1OAMKQogGhgHizMCnhhM")
-huggingface_token = os.getenv("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")
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
 if huggingface_token:
     login(token=huggingface_token)
 
-# Models and tools
+# Initialize models and tools
 text_embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 arxiv_tool = ArxivQueryRun()
 
 def extract_text_from_pdfs(uploaded_files):
@@ -31,35 +32,18 @@ def extract_text_from_pdfs(uploaded_files):
     return all_text
 
 def process_text_and_store(all_text):
-    client = chromadb.PersistentClient(path="chroma_db")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=50, separators=["\n\n", "\n", " ", ""]
     )
     chunks = text_splitter.split_text(all_text)
 
-    try:
-        client.delete_collection(name="knowledge_base")
-    except Exception:
-        pass
+    # Create FAISS index
+    faiss_db = FAISS.from_texts(chunks, embedding_model)
+    return faiss_db
 
-    collection = client.create_collection(name="knowledge_base")
-
-    for i, chunk in enumerate(chunks):
-        embedding = text_embedding_model.encode(chunk)
-        collection.add(
-            ids=[f"chunk_{i}"],
-            embeddings=[embedding.tolist()],
-            metadatas=[{"source": "pdf", "chunk_id": i}],
-            documents=[chunk]
-        )
-    return collection
-
-def semantic_search(query, collection, top_k=2):
-    query_embedding = text_embedding_model.encode(query)
-    results = collection.query(
-        query_embeddings=[query_embedding.tolist()], n_results=top_k
-    )
-    return results
+def semantic_search(query, faiss_db, top_k=2):
+    docs = faiss_db.similarity_search(query, k=top_k)
+    return docs
 
 def generate_response(query, context):
     prompt = f"Query: {query}\nContext: {context}\nAnswer:"
@@ -80,14 +64,14 @@ def main():
         if uploaded_files:
             st.write("Processing uploaded files...")
             all_text = extract_text_from_pdfs(uploaded_files)
-            collection = process_text_and_store(all_text)
-            st.session_state['collection'] = collection
+            faiss_db = process_text_and_store(all_text)
+            st.session_state['faiss_db'] = faiss_db
             st.success("PDF content processed and stored successfully!")
 
             query = st.text_input("Enter your query about the PDFs:")
             if st.button("Execute Query") and query:
-                results = semantic_search(query, st.session_state['collection'])
-                context = "\n".join(results['documents'][0])
+                docs = semantic_search(query, st.session_state['faiss_db'])
+                context = "\n".join([doc.page_content for doc in docs])
                 response = generate_response(query, context)
                 st.subheader("Generated Response:")
                 st.write(response)
@@ -102,16 +86,16 @@ def main():
             st.subheader("Search Results:")
             st.write(arxiv_results)
 
-            collection = process_text_and_store(arxiv_results)
-            st.session_state["collection"] = collection
+            faiss_db = process_text_and_store(arxiv_results)
+            st.session_state["faiss_db"] = faiss_db
 
             st.success("arXiv paper content processed and stored successfully!")
 
-        if "arxiv_results" in st.session_state and "collection" in st.session_state:
+        if "arxiv_results" in st.session_state and "faiss_db" in st.session_state:
             query = st.text_input("Ask a question about the paper:")
             if st.button("Execute Query on Paper") and query:
-                results = semantic_search(query, st.session_state["collection"])
-                context = "\n".join(results['documents'][0])
+                docs = semantic_search(query, st.session_state["faiss_db"])
+                context = "\n".join([doc.page_content for doc in docs])
                 response = generate_response(query, context)
                 st.subheader("Generated Response:")
                 st.write(response)
