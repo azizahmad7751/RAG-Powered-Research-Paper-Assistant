@@ -1,9 +1,10 @@
 streamlit
-chromadb
 PyPDF2
 sentence-transformers
 langchain
 langchain-community
-litellm
+langchain-faiss
+faiss-cpu
 huggingface-hub
 python-dotenv
+litellm
