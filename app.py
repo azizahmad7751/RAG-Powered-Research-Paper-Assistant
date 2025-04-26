@@ -7,14 +7,19 @@ from langchain_community.tools import ArxivQueryRun
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from litellm import completion
+from langchain.embeddings import HuggingFaceInferenceAPIEmbeddings
 
 # Load environment variables
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
-# Initialize models and tools
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+# Initialize API-based Embedding model
+embedding_model = HuggingFaceInferenceAPIEmbeddings(
+    api_key=huggingface_token,
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
 arxiv_tool = ArxivQueryRun()
 
 def extract_text_from_pdfs(uploaded_files):
