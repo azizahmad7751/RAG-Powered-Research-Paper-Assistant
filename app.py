@@ -12,8 +12,8 @@ from litellm import completion
 
 # Load environment variables
 load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
+gemini_api_key = os.getenv("AIzaSyBy3C54XZ7sczq1OAMKQogGhgHizMCnhhM")
+huggingface_token = os.getenv("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")
 
 if huggingface_token:
     login(token=huggingface_token)
