@@ -8,6 +8,7 @@ from langchain_community.tools import ArxivQueryRun
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from litellm import completion
+from langchain.embeddings import HuggingFaceEmbeddings
 
 
 # Load environment variables
@@ -18,9 +19,13 @@ huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 if huggingface_token:
     login(token=huggingface_token)
 '''
+
+
+
 # Initialize models and tools
 text_embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
 arxiv_tool = ArxivQueryRun()
 
 
