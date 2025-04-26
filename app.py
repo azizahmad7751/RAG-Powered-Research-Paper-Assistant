@@ -37,6 +37,25 @@ embedding_model = MyHuggingFaceEmbeddings(
 
 arxiv_tool = ArxivQueryRun()
 
+
+import requests
+
+def embed_texts(texts, hf_token):
+    headers = {
+        "Authorization": f"Bearer {hf_token}"
+    }
+    API_URL = "https://api-inference.huggingface.co/embeddings/sentence-transformers/all-MiniLM-L6-v2"
+    
+    payload = {"inputs": texts}
+    response = requests.post(API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        raise Exception(f"Embedding failed: {response.text}")
+    
+    embeddings = response.json()
+    return embeddings
+
+
 def extract_text_from_pdfs(uploaded_files):
     all_text = ""
     for uploaded_file in uploaded_files:
@@ -51,11 +70,17 @@ def process_text_and_store(all_text):
     )
     chunks = text_splitter.split_text(all_text)
 
+    # Embed texts manually
+    embeddings = embed_texts(chunks, huggingface_token)
+
     # Create FAISS index
-    faiss_db = FAISS.from_texts(
-        texts=chunks,
-        embedding=embedding_model
-    )
+    dimension = len(embeddings[0])
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.array(embeddings).astype('float32'))
+
+    # Store texts alongside
+    faiss_db = FAISS(embedding_function=None, index=index, documents=chunks)
+
     return faiss_db
 
 
