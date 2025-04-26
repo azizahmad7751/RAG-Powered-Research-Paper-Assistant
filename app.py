@@ -19,9 +19,10 @@ if huggingface_token:
     login(token=huggingface_token)
 
 # Initialize models and tools
-text_embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+text_embedding_model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 arxiv_tool = ArxivQueryRun()
+
 
 def extract_text_from_pdfs(uploaded_files):
     all_text = ""
