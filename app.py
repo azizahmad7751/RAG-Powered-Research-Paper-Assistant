@@ -36,9 +36,13 @@ def process_text_and_store(all_text):
     )
     chunks = text_splitter.split_text(all_text)
 
+    # Embed documents using HuggingFace Inference API
+    embeddings = embedding_model.embed_documents(chunks)
+
     # Create FAISS index
-    faiss_db = FAISS.from_texts(chunks, embedding_model)
+    faiss_db = FAISS.from_embeddings(embeddings=embeddings, texts=chunks)
     return faiss_db
+
 
 def semantic_search(query, faiss_db, top_k=2):
     docs = faiss_db.similarity_search(query, k=top_k)
