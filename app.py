@@ -5,23 +5,11 @@ from dotenv import load_dotenv
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.tools import ArxivQueryRun
 from langchain.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
-from litellm import completion
 from langchain.embeddings import HuggingFaceInferenceAPIEmbeddings
+from litellm import completion
 
-# Load environment variables
-load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY")
-huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
-
-
-embedding_model = MyHuggingFaceEmbeddings(
-    api_key=huggingface_token,
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-
-arxiv_tool = ArxivQueryRun()
-
+# -------------------------
+# Define wrapper class here
 class MyHuggingFaceEmbeddings:
     def __init__(self, api_key, model_name):
         self.client = HuggingFaceInferenceAPIEmbeddings(
@@ -34,8 +22,20 @@ class MyHuggingFaceEmbeddings:
 
     def embed_query(self, text):
         return self.client.embed_query(text)
+# -------------------------
 
+# Load environment variables
+load_dotenv()
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
+# Initialize models
+embedding_model = MyHuggingFaceEmbeddings(
+    api_key=huggingface_token,
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
+
+arxiv_tool = ArxivQueryRun()
 
 def extract_text_from_pdfs(uploaded_files):
     all_text = ""
