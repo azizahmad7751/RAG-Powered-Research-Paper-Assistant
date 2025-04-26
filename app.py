@@ -15,12 +15,27 @@ gemini_api_key = os.getenv("GEMINI_API_KEY")
 huggingface_token = os.getenv("HUGGINGFACE_TOKEN")
 
 
-# Initialize API-based Embedding model
-embedding_model = HuggingFaceInferenceAPIEmbeddings(
+embedding_model = MyHuggingFaceEmbeddings(
     api_key=huggingface_token,
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
+
 arxiv_tool = ArxivQueryRun()
+
+class MyHuggingFaceEmbeddings:
+    def __init__(self, api_key, model_name):
+        self.client = HuggingFaceInferenceAPIEmbeddings(
+            api_key=api_key,
+            model_name=model_name
+        )
+    
+    def embed_documents(self, texts):
+        return self.client.embed_documents(texts)
+
+    def embed_query(self, text):
+        return self.client.embed_query(text)
+
+
 
 def extract_text_from_pdfs(uploaded_files):
     all_text = ""
@@ -36,12 +51,13 @@ def process_text_and_store(all_text):
     )
     chunks = text_splitter.split_text(all_text)
 
-    # Create FAISS index with embeddings
+    # Create FAISS index
     faiss_db = FAISS.from_texts(
         texts=chunks,
-        embedding=lambda x: embedding_model.embed_documents(x)
+        embedding=embedding_model
     )
     return faiss_db
+
 
 
 def semantic_search(query, faiss_db, top_k=2):
