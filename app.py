@@ -2,13 +2,13 @@ import os
 import PyPDF2
 import streamlit as st
 from dotenv import load_dotenv
-from huggingface_hub import login
 from sentence_transformers import SentenceTransformer
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.tools import ArxivQueryRun
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from litellm import completion
+
 
 # Load environment variables
 load_dotenv()
